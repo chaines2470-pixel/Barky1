@@ -1,0 +1,11 @@
+# Build intermediates
+bin/classes.dex
+bin/resources.ap_
+bin/barky_unsigned.apk
+bin/barky_aligned.apk
+bin/barky.keystore
+gen/
+
+# Python cache
+__pycache__/
+*.pyc

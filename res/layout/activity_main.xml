@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFF8F0">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FF6B35"
+        android:padding="16dp"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="&#x1F436; Barky"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dog Soundboard"
+            android:textSize="14sp"
+            android:textColor="#FFE0C0" />
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_chihuahua"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F436;\nChihuahua\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#FF6B35"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_german_shepherd"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F415;\nGerman Shepherd\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#8B4513"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_golden_retriever"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F436;\nGolden Retriever\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#DAA520"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_poodle"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F429;\nPoodle\nYap"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#9B59B6"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_bulldog"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F436;\nBulldog\nWoof"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#E74C3C"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_husky"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F43A;\nHusky\nHowl"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#2980B9"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_beagle"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F415;\nBeagle\nBay"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#C0392B"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_dachshund"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F436;\nDachshund\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#A0522D"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_labrador"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F415;\nLabrador\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#F39C12"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_rottweiler"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F436;\nRottweiler\nGrowl"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#2C3E50"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_pomeranian"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F436;\nPomeranian\nYip"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#FF69B4"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_doberman"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F415;\nDoberman\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#1A1A2E"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_corgi"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F436;\nCorgi\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#FF8C00"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_shihtzu"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F429;\nShih Tzu\nYap"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#E91E8C"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_border_collie"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F415;\nBorder Collie\nBark"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#27AE60"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_great_dane"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F436;\nGreat Dane\nWoof"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#5D4037"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <Button
+                    android:id="@+id/btn_puppy"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="4dp"
+                    android:text="&#x1F43E;\nPuppy\nWhine"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#FF6B9D"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_wolf"
+                    android:layout_width="0dp"
+                    android:layout_height="90dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="&#x1F43A;\nWolf\nHowl"
+                    android:textSize="11sp"
+                    android:textColor="#FFFFFF"
+                    android:background="#34495E"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Barky</string>
+    <string name="title">Barky</string>
+    <string name="subtitle">Dog Soundboard</string>
+
+    <string name="sound_chihuahua">Chihuahua\nBark</string>
+    <string name="sound_german_shepherd">German Shepherd\nBark</string>
+    <string name="sound_golden_retriever">Golden Retriever\nBark</string>
+    <string name="sound_poodle">Poodle\nYap</string>
+    <string name="sound_bulldog">Bulldog\nWoof</string>
+    <string name="sound_husky">Husky\nHowl</string>
+    <string name="sound_beagle">Beagle\nBay</string>
+    <string name="sound_dachshund">Dachshund\nBark</string>
+    <string name="sound_labrador">Labrador\nBark</string>
+    <string name="sound_rottweiler">Rottweiler\nGrowl</string>
+    <string name="sound_pomeranian">Pomeranian\nYip</string>
+    <string name="sound_doberman">Doberman\nBark</string>
+    <string name="sound_corgi">Corgi\nBark</string>
+    <string name="sound_shihtzu">Shih Tzu\nYap</string>
+    <string name="sound_border_collie">Border Collie\nBark</string>
+    <string name="sound_great_dane">Great Dane\nWoof</string>
+    <string name="sound_puppy">Puppy\nWhine</string>
+    <string name="sound_wolf">Wolf\nHowl</string>
+</resources>
