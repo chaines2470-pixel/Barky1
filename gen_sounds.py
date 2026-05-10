@@ -1,214 +1,307 @@
 #!/usr/bin/env python3
-"""Generate synthetic dog sounds as WAV files."""
+"""Generate realistic-sounding synthetic dog sounds using FM synthesis."""
 import wave, struct, math, random, os
 
-SAMPLE_RATE = 44100
+SR = 44100
 OUTPUT_DIR = "/home/user/Barky1/res/raw"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def write_wav(filename, samples):
     path = os.path.join(OUTPUT_DIR, filename)
+    # Normalize to prevent clipping
+    peak = max(abs(s) for s in samples) if samples else 1
+    scale = 30000 / peak if peak > 0 else 1.0
+    clamped = [max(-32767, min(32767, int(s * scale))) for s in samples]
     with wave.open(path, 'w') as f:
         f.setnchannels(1)
         f.setsampwidth(2)
-        f.setframerate(SAMPLE_RATE)
-        data = struct.pack('<' + 'h' * len(samples), *samples)
-        f.writeframes(data)
-    print(f"  {filename}: {len(samples)/SAMPLE_RATE:.2f}s")
+        f.setframerate(SR)
+        f.writeframes(struct.pack('<' + 'h' * len(clamped), *clamped))
+    print(f"  {filename}: {len(samples)/SR:.2f}s")
 
-def clamp(v):
-    return max(-32767, min(32767, int(v)))
+def tanh_clip(x, drive=1.5):
+    return math.tanh(x * drive) / drive
 
-def adsr(t, attack, decay, sustain, release, total):
-    if t < attack:
-        return t / attack
-    elif t < attack + decay:
-        return 1.0 - (1.0 - sustain) * (t - attack) / decay
-    elif t < total - release:
-        return sustain
+def osc(freq, t, phase=0.0):
+    return math.sin(2 * math.pi * freq * t + phase)
+
+def env_adsr(t, atk, dec, sus, rel, total):
+    if t < atk:
+        return t / atk if atk > 0 else 1.0
+    elif t < atk + dec:
+        return 1.0 - (1.0 - sus) * (t - atk) / dec
+    elif t < total - rel:
+        return sus
     else:
         rem = total - t
-        return sustain * rem / release if rem > 0 else 0
+        return sus * max(0, rem / rel) if rel > 0 else 0.0
 
-def noise():
-    return random.uniform(-1, 1)
-
-def sine(freq, t):
-    return math.sin(2 * math.pi * freq * t)
-
-def make_bark(freq, dur, amplitude=28000, harmonics=3, noise_mix=0.15):
-    """Single bark sound."""
+def bark_single(fund, dur, breed_noise=0.12, roughness=30.0, fm_ratio=2.1, fm_depth=3.5):
+    """
+    Single bark using FM synthesis + roughness modulation + soft clipping.
+    fund      - fundamental frequency (Hz)
+    dur       - duration (seconds)
+    roughness - AM frequency for the 'barky' texture
+    fm_ratio  - FM modulator frequency ratio
+    fm_depth  - FM modulation index
+    """
+    n = int(dur * SR)
     samples = []
-    n = int(dur * SAMPLE_RATE)
-    for i in range(n):
-        t = i / SAMPLE_RATE
-        env = adsr(t, 0.01, 0.05, 0.4, 0.1, dur)
-        sig = sine(freq, t)
-        for h in range(2, harmonics + 1):
-            sig += sine(freq * h, t) * (0.5 / h)
-        sig = sig / (1 + harmonics * 0.3)
-        sig = sig * (1 - noise_mix) + noise() * noise_mix
-        samples.append(clamp(sig * env * amplitude))
-    return samples
+    mod_freq = fund * fm_ratio
 
-def make_multi_bark(freq, count, bark_dur, gap_dur, **kwargs):
-    """Multiple barks with gaps."""
-    all_samples = []
-    for _ in range(count):
-        all_samples.extend(make_bark(freq, bark_dur, **kwargs))
-        gap = int(gap_dur * SAMPLE_RATE)
-        all_samples.extend([0] * gap)
-    return all_samples
-
-def make_howl(start_freq, end_freq, dur, amplitude=26000):
-    """Frequency-sweep howl."""
-    samples = []
-    n = int(dur * SAMPLE_RATE)
     for i in range(n):
-        t = i / SAMPLE_RATE
+        t = i / SR
         frac = t / dur
-        freq = start_freq + (end_freq - start_freq) * math.sin(math.pi * frac)
-        env = adsr(t, 0.15, 0.1, 0.8, 0.3, dur)
-        sig = sine(freq, t) * 0.7 + sine(freq * 2, t) * 0.2 + sine(freq * 3, t) * 0.1
-        samples.append(clamp(sig * env * amplitude))
+
+        # Pitch glide: sharp initial transient dips then settles
+        glide = 1.0 + 0.25 * math.exp(-frac * 18)
+        f0 = fund * glide
+
+        # FM modulation index decreases over time (brighter attack)
+        idx = fm_depth * math.exp(-frac * 6)
+
+        # Phase modulation (FM synthesis)
+        phi_mod = idx * osc(mod_freq * glide, t)
+
+        # Carrier + harmonics
+        sig = osc(f0, t, phi_mod) * 0.55
+        sig += osc(f0 * 2, t, phi_mod * 0.5) * 0.22
+        sig += osc(f0 * 3, t, phi_mod * 0.3) * 0.12
+        sig += osc(f0 * 4, t) * 0.06
+        sig += osc(f0 * 5, t) * 0.03
+
+        # Breath / noise component
+        sig += random.gauss(0, breed_noise)
+
+        # Rough amplitude texture — the "woof" character
+        rough = 1.0 + 0.35 * osc(roughness, t) + 0.15 * osc(roughness * 1.7, t)
+
+        # ADSR envelope
+        amp = env_adsr(t, 0.008, 0.05, 0.35, dur * 0.25, dur)
+
+        # Soft clip for warmth / naturalness
+        out = tanh_clip(sig * rough * amp, drive=1.8)
+        samples.append(out * 32000)
+
     return samples
 
-def make_growl(freq, dur, amplitude=25000):
-    """Low growl with heavy noise."""
-    samples = []
-    n = int(dur * SAMPLE_RATE)
-    for i in range(n):
-        t = i / SAMPLE_RATE
-        env = adsr(t, 0.05, 0.1, 0.7, 0.2, dur)
-        # Rough growl: low freq + lots of noise + harmonics
-        sig = sine(freq, t) * 0.4
-        sig += sine(freq * 1.5, t) * 0.2
-        sig += noise() * 0.4
-        # Modulate amplitude slightly for roughness
-        mod = 0.85 + 0.15 * sine(18, t)
-        samples.append(clamp(sig * mod * env * amplitude))
-    return samples
+def silence(dur):
+    return [0] * int(dur * SR)
 
-def make_whine(start_freq, end_freq, dur, amplitude=22000):
-    """Descending whine."""
-    samples = []
-    n = int(dur * SAMPLE_RATE)
-    for i in range(n):
-        t = i / SAMPLE_RATE
-        frac = t / dur
-        freq = start_freq - (start_freq - end_freq) * frac
-        env = adsr(t, 0.05, 0.1, 0.6, 0.4, dur)
-        # Add slight vibrato
-        vibrato = 1 + 0.02 * sine(6, t)
-        sig = sine(freq * vibrato, t) * 0.8 + sine(freq * vibrato * 2, t) * 0.2
-        samples.append(clamp(sig * env * amplitude))
-    return samples
-
-def make_yips(freq, count, amplitude=24000):
-    """Short high-pitched yips."""
-    all_samples = []
+def multi_bark(fund, count, bark_dur, gap, **kw):
+    out = []
     for _ in range(count):
-        n = int(0.12 * SAMPLE_RATE)
+        out.extend(bark_single(fund, bark_dur, **kw))
+        out.extend(silence(gap))
+    return out
+
+def howl(f_start, f_peak, f_end, dur, vibrato_rate=4.5, vibrato_depth=0.015):
+    """Sustained howl with smooth pitch arc and vibrato."""
+    n = int(dur * SR)
+    samples = []
+    for i in range(n):
+        t = i / SR
+        frac = t / dur
+
+        # Smooth pitch arc: rise then fall
+        arc = math.sin(math.pi * frac)
+        f0 = f_start + (f_peak - f_start) * arc * arc
+
+        # Vibrato kicks in after first 0.3s
+        vib_env = max(0, (t - 0.3) / 0.5)
+        vib = 1.0 + vibrato_depth * vib_env * math.sin(2 * math.pi * vibrato_rate * t)
+
+        # Pure harmonics, minimal noise — howls are tonal
+        sig = osc(f0 * vib, t) * 0.55
+        sig += osc(f0 * vib * 2, t) * 0.28
+        sig += osc(f0 * vib * 3, t) * 0.10
+        sig += osc(f0 * vib * 4, t) * 0.05
+        sig += random.gauss(0, 0.015)
+
+        amp = env_adsr(t, 0.18, 0.12, 0.82, 0.4, dur)
+        samples.append(tanh_clip(sig * amp, 1.3) * 32000)
+    return samples
+
+def growl(fund, dur, mod_rate=14.0, roughness_depth=0.55):
+    """Deep guttural growl — heavy sub-harmonic AM + noise."""
+    n = int(dur * SR)
+    samples = []
+    for i in range(n):
+        t = i / SR
+        frac = t / dur
+
+        # Sub-harmonics dominate in growls
+        sig = osc(fund, t) * 0.35
+        sig += osc(fund * 0.5, t) * 0.25       # sub-octave
+        sig += osc(fund * 1.5, t) * 0.18
+        sig += osc(fund * 2, t) * 0.10
+        sig += osc(fund * 2.5, t) * 0.06
+
+        # Rough throaty modulation
+        rough = 1.0 + roughness_depth * osc(mod_rate, t)
+        rough += 0.2 * osc(mod_rate * 0.6, t)
+
+        # Heavy noise floor for growl texture
+        sig += random.gauss(0, 0.3)
+
+        amp = env_adsr(t, 0.05, 0.08, 0.75, 0.25, dur)
+        out = tanh_clip(sig * rough * amp, 2.2)
+        samples.append(out * 32000)
+    return samples
+
+def whine(f_start, f_end, dur, tremolo=True):
+    """High plaintive whine with descending pitch and emotional tremolo."""
+    n = int(dur * SR)
+    samples = []
+    for i in range(n):
+        t = i / SR
+        frac = t / dur
+
+        # Pitch descends with a slight bow (starts faster, slows)
+        f0 = f_start * ((f_end / f_start) ** (frac * frac))
+
+        # Tremolo for that sad puppy quality
+        trem = 1.0 + (0.18 * math.sin(2 * math.pi * 7.5 * t) if tremolo else 0)
+
+        sig = osc(f0, t) * 0.65
+        sig += osc(f0 * 2, t) * 0.22
+        sig += osc(f0 * 3, t) * 0.08
+        sig += random.gauss(0, 0.04)
+
+        amp = env_adsr(t, 0.04, 0.08, 0.65, 0.38, dur)
+        samples.append(tanh_clip(sig * trem * amp, 1.2) * 32000)
+    return samples
+
+def bay(fund, dur):
+    """Beagle-style bay: pitch arc + strong odd harmonics + nasal quality."""
+    n = int(dur * SR)
+    samples = []
+    for i in range(n):
+        t = i / SR
+        frac = t / dur
+
+        # Bay has two humps in pitch
+        arc = math.sin(math.pi * frac * 2) * 0.12
+        f0 = fund * (1.0 + arc)
+
+        # Nasal quality: strong odd harmonics
+        sig = osc(f0, t) * 0.45
+        sig += osc(f0 * 3, t) * 0.30   # strong 3rd = nasal
+        sig += osc(f0 * 5, t) * 0.14
+        sig += osc(f0 * 2, t) * 0.07
+        sig += osc(f0 * 7, t) * 0.05
+        sig += random.gauss(0, 0.06)
+
+        rough = 1.0 + 0.2 * osc(22, t)
+        amp = env_adsr(t, 0.06, 0.1, 0.7, 0.3, dur)
+        samples.append(tanh_clip(sig * rough * amp, 1.6) * 32000)
+    return samples
+
+def yips(fund, count):
+    """Tiny rapid yips (Pomeranian, etc.) — very short, bright, with pitch bend."""
+    out = []
+    for _ in range(count):
+        dur = 0.10
+        n = int(dur * SR)
         for i in range(n):
-            t = i / SAMPLE_RATE
-            env = adsr(t, 0.005, 0.02, 0.3, 0.06, 0.12)
-            # Slight pitch drop in each yip
-            f = freq * (1.0 - 0.1 * t / 0.12)
-            sig = sine(f, t) * 0.7 + sine(f * 2, t) * 0.2 + noise() * 0.1
-            all_samples.append(clamp(sig * env * amplitude))
-        gap = int(0.08 * SAMPLE_RATE)
-        all_samples.extend([0] * gap)
-    return all_samples
+            t = i / SR
+            frac = t / dur
+            # Quick pitch drop gives it a "yip" character
+            f0 = fund * (1.0 + 0.3 * math.exp(-frac * 20))
+            idx = 2.5 * math.exp(-frac * 10)
+            phi = idx * osc(f0 * 3, t)
+            sig = osc(f0, t, phi) * 0.6
+            sig += osc(f0 * 2, t) * 0.25
+            sig += random.gauss(0, 0.18)
+            amp = env_adsr(t, 0.004, 0.015, 0.3, 0.06, dur)
+            out.append(tanh_clip(sig * amp, 2.0) * 32000)
+        out.extend(silence(0.09))
+    return out
 
-def make_bay(freq, dur, amplitude=27000):
-    """Beagle-style baying - melodic with frequency modulation."""
-    samples = []
-    n = int(dur * SAMPLE_RATE)
-    for i in range(n):
-        t = i / SAMPLE_RATE
-        env = adsr(t, 0.08, 0.1, 0.65, 0.25, dur)
-        # Bay has a distinctive pitch rise then fall
-        sweep = 1 + 0.15 * math.sin(math.pi * t / dur)
-        sig = sine(freq * sweep, t) * 0.6
-        sig += sine(freq * sweep * 1.5, t) * 0.25
-        sig += sine(freq * sweep * 2, t) * 0.15
-        sig += noise() * 0.05
-        samples.append(clamp(sig * env * amplitude))
-    return samples
+# ── Generate all 18 sounds ────────────────────────────────────────────────────
+print("Generating realistic dog sounds...")
 
-print("Generating dog sounds...")
-
-# 1. Chihuahua - tiny high-pitched bark (3 rapid barks)
+# 1. Chihuahua — tiny, yappy, high (3 sharp barks)
 write_wav("chihuahua_bark.wav",
-    make_multi_bark(1400, 3, 0.12, 0.08, amplitude=22000, harmonics=2, noise_mix=0.2))
+    multi_bark(1300, 3, 0.13, 0.09,
+               breed_noise=0.22, roughness=45, fm_ratio=2.4, fm_depth=4.0))
 
-# 2. German Shepherd - authoritative medium-low bark (2 barks)
+# 2. German Shepherd — authoritative, medium-low (2 forceful barks)
 write_wav("german_shepherd_bark.wav",
-    make_multi_bark(380, 2, 0.22, 0.12, amplitude=30000, harmonics=4, noise_mix=0.18))
+    multi_bark(360, 2, 0.28, 0.14,
+               breed_noise=0.10, roughness=28, fm_ratio=2.0, fm_depth=3.8))
 
-# 3. Golden Retriever - friendly medium bark (2 barks)
+# 3. Golden Retriever — warm, friendly (2 open barks)
 write_wav("golden_retriever_bark.wav",
-    make_multi_bark(520, 2, 0.2, 0.1, amplitude=28000, harmonics=3, noise_mix=0.15))
+    multi_bark(500, 2, 0.24, 0.12,
+               breed_noise=0.08, roughness=25, fm_ratio=1.8, fm_depth=3.2))
 
-# 4. Poodle - yappy medium-high bark (4 barks)
+# 4. Poodle — bright, slightly nasal (4 rapid yaps)
 write_wav("poodle_yap.wav",
-    make_multi_bark(900, 4, 0.1, 0.07, amplitude=23000, harmonics=2, noise_mix=0.2))
+    multi_bark(820, 4, 0.11, 0.07,
+               breed_noise=0.20, roughness=40, fm_ratio=2.3, fm_depth=3.5))
 
-# 5. Bulldog - heavy low woof (1 big woof)
+# 5. Bulldog — massive, slow, breathy single woof
 write_wav("bulldog_woof.wav",
-    make_bark(200, 0.5, amplitude=31000, harmonics=5, noise_mix=0.25))
+    bark_single(185, 0.60,
+                breed_noise=0.28, roughness=18, fm_ratio=1.5, fm_depth=2.8))
 
-# 6. Husky - melodic howl (rises and falls)
+# 6. Husky — melodic, tonal howl
 write_wav("husky_howl.wav",
-    make_howl(280, 680, 2.2, amplitude=26000))
+    howl(260, 640, 300, 2.4, vibrato_rate=4.0, vibrato_depth=0.018))
 
-# 7. Beagle - baying sound
+# 7. Beagle — classic long bay
 write_wav("beagle_bay.wav",
-    make_bay(460, 1.4, amplitude=27000))
+    bay(440, 1.6))
 
-# 8. Dachshund - persistent medium barks (5 barks)
+# 8. Dachshund — persistent, slightly hoarse (5 barks)
 write_wav("dachshund_bark.wav",
-    make_multi_bark(650, 5, 0.14, 0.06, amplitude=24000, harmonics=3, noise_mix=0.15))
+    multi_bark(620, 5, 0.15, 0.07,
+               breed_noise=0.18, roughness=36, fm_ratio=2.1, fm_depth=3.6))
 
-# 9. Labrador - enthusiastic medium barks (3 barks)
+# 9. Labrador — enthusiastic, open-chested (3 barks)
 write_wav("labrador_bark.wav",
-    make_multi_bark(490, 3, 0.2, 0.1, amplitude=29000, harmonics=3, noise_mix=0.16))
+    multi_bark(470, 3, 0.26, 0.11,
+               breed_noise=0.09, roughness=22, fm_ratio=1.9, fm_depth=3.4))
 
-# 10. Rottweiler - deep growl
+# 10. Rottweiler — deep, rumbling growl
 write_wav("rottweiler_growl.wav",
-    make_growl(120, 1.8, amplitude=30000))
+    growl(110, 2.0, mod_rate=12, roughness_depth=0.6))
 
-# 11. Pomeranian - tiny rapid yips
+# 11. Pomeranian — rapid tiny yips
 write_wav("pomeranian_yip.wav",
-    make_yips(1600, 5, amplitude=20000))
+    yips(1550, 6))
 
-# 12. Doberman - sharp assertive bark (2 barks)
+# 12. Doberman — sharp, clipped, assertive (2 barks)
 write_wav("doberman_bark.wav",
-    make_multi_bark(420, 2, 0.18, 0.1, amplitude=30000, harmonics=3, noise_mix=0.2))
+    multi_bark(400, 2, 0.20, 0.11,
+               breed_noise=0.12, roughness=32, fm_ratio=2.2, fm_depth=4.2))
 
-# 13. Corgi - herding bark (4 barks, medium)
+# 13. Corgi — medium, herding staccato (4 barks)
 write_wav("corgi_bark.wav",
-    make_multi_bark(600, 4, 0.15, 0.08, amplitude=26000, harmonics=3, noise_mix=0.15))
+    multi_bark(580, 4, 0.16, 0.08,
+               breed_noise=0.14, roughness=30, fm_ratio=2.0, fm_depth=3.3))
 
-# 14. Shih Tzu - breathy high yap (3 yaps)
+# 14. Shih Tzu — small, breathy, slightly husky (3 yaps)
 write_wav("shihtzu_yap.wav",
-    make_multi_bark(1100, 3, 0.1, 0.07, amplitude=20000, harmonics=2, noise_mix=0.3))
+    multi_bark(980, 3, 0.12, 0.08,
+               breed_noise=0.30, roughness=42, fm_ratio=2.3, fm_depth=3.0))
 
-# 15. Border Collie - alert medium bark (3 barks)
+# 15. Border Collie — focused, alert (3 crisp barks)
 write_wav("border_collie_bark.wav",
-    make_multi_bark(560, 3, 0.17, 0.09, amplitude=27000, harmonics=3, noise_mix=0.14))
+    multi_bark(540, 3, 0.19, 0.09,
+               breed_noise=0.10, roughness=26, fm_ratio=2.0, fm_depth=3.5))
 
-# 16. Great Dane - very deep resonant woof (1 big woof)
+# 16. Great Dane — very deep, resonant, boomy single woof
 write_wav("great_dane_woof.wav",
-    make_bark(130, 0.7, amplitude=32000, harmonics=5, noise_mix=0.2))
+    bark_single(118, 0.80,
+                breed_noise=0.15, roughness=14, fm_ratio=1.4, fm_depth=2.5))
 
-# 17. Puppy - high plaintive whine
+# 17. Puppy — high trembling whine
 write_wav("puppy_whine.wav",
-    make_whine(1200, 600, 1.5, amplitude=22000))
+    whine(1150, 580, 1.8, tremolo=True))
 
-# 18. Wolf - dramatic long howl
+# 18. Wolf — long dramatic howl
 write_wav("wolf_howl.wav",
-    make_howl(220, 520, 3.0, amplitude=28000))
+    howl(195, 490, 220, 3.2, vibrato_rate=3.8, vibrato_depth=0.022))
 
-print(f"\nAll sounds saved to {OUTPUT_DIR}/")
-print(f"Total: {len(os.listdir(OUTPUT_DIR))} files")
+print(f"\nDone — {len(os.listdir(OUTPUT_DIR))} files in {OUTPUT_DIR}/")
