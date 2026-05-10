@@ -1,9 +1,5 @@
 # Build intermediates
-bin/classes.dex
-bin/resources.ap_
-bin/barky_unsigned.apk
-bin/barky_aligned.apk
-bin/barky.keystore
+bin/
 gen/
 
 # Python cache
